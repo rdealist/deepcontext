@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from core.watcher import DirectoryWatcher
 
 app = FastAPI(title="DeepContext Engine", version="0.1.0")
 
@@ -28,7 +29,66 @@ db_manager = None
 file_scanner = None
 llm_service = None
 chat_history = None
+watcher = None
 chat_settings = {"model": None, "top_k": 5}
+
+# ... (initialize_services stays same) ...
+
+@app.post("/api/index", response_model=IndexResponse)
+async def index_directory(request: IndexRequest):
+    """
+    Index a directory of documents into the vector database.
+    
+    This endpoint:
+    1. Scans the specified directory for supported files
+    2. Chunks the content intelligently
+    3. Generates embeddings using sentence-transformers
+    4. Stores in LanceDB for vector similarity search
+    5. Starts a background watcher for auto-indexing new files
+    """
+    initialize_services()
+    global watcher
+
+    # Validate path
+    if not os.path.exists(request.path):
+        raise HTTPException(
+            status_code=400, detail=f"Path does not exist: {request.path}"
+        )
+
+    if not os.path.isdir(request.path):
+        raise HTTPException(
+            status_code=400, detail=f"Path is not a directory: {request.path}"
+        )
+
+    try:
+        # Ingest directory
+        stats = file_scanner.ingest_directory(
+            root_path=request.path,
+            recursive=request.recursive,
+            force_reindex=request.force_reindex,
+        )
+
+        # Start watcher
+        if watcher:
+            watcher.stop()
+        
+        watcher = DirectoryWatcher(request.path, lambda f: file_scanner.ingest_file(f))
+        watcher.start()
+
+        # Build response message
+        message = (
+            f"Indexed {stats['total_files']} files "
+            f"({stats['new_files']} new, {stats['updated_files']} updated, "
+            f"{stats['skipped_files']} skipped). "
+            f"Created {stats['total_chunks']} chunks. "
+            f"Auto-indexing started."
+        )
+
+        return IndexResponse(success=True, message=message, stats=stats)
+
+    except Exception as e:
+        print(f"[Index] Error during indexing: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during indexing: {str(e)}")
 
 
 def initialize_services():

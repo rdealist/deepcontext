@@ -90,6 +90,14 @@ class DBManager:
                 self.table_name, schema=Document, mode="overwrite"
             )
             print(f"[DBManager] Created new table: {self.table_name}")
+        
+        # Ensure FTS index
+        try:
+            self._table.create_fts_index("content")
+            print("[DBManager] FTS index ensured")
+        except Exception as e:
+            # Index might already exist or not supported yet
+            print(f"[DBManager] Note: FTS index creation skipped/failed: {e}")
 
     def generate_embedding(self, text: str) -> List[float]:
         """
@@ -177,37 +185,62 @@ class DBManager:
         self, query: str, limit: int = 10, metric: str = "cosine"
     ) -> List[Dict[str, Any]]:
         """
-        Search for similar documents using vector similarity.
-
-        Args:
-            query: Search query text
-            limit: Maximum number of results to return
-            metric: Distance metric ("cosine", "l2", "dot")
-
-        Returns:
-            List of search results with content, metadata, and scores
+        Hybrid search using Vector + FTS with Reciprocal Rank Fusion (RRF).
         """
-        # Generate query embedding
+        # 1. Vector Search
         query_embedding = self.generate_embedding(query)
-
-        # Search
-        results = (
+        vec_results = (
             self.table.search(query_embedding)
-            .limit(limit)
+            .limit(limit * 2)
             .metric(metric)
-            .to_pydantic(Document)
+            .to_list()
         )
+
+        # 2. FTS Search
+        try:
+            fts_results = (
+                self.table.search(query, query_type="fts")
+                .limit(limit * 2)
+                .to_list()
+            )
+        except Exception as e:
+            print(f"[DBManager] FTS search failed: {e}")
+            fts_results = []
+
+        # 3. RRF Fusion
+        k = 60
+        scores = {}
+        
+        # Process vector results
+        for rank, res in enumerate(vec_results):
+            doc_id = res["id"]
+            if doc_id not in scores:
+                scores[doc_id] = {"doc": res, "score": 0.0}
+            scores[doc_id]["score"] += 1.0 / (k + rank + 1)
+
+        # Process FTS results
+        for rank, res in enumerate(fts_results):
+            doc_id = res["id"]
+            if doc_id not in scores:
+                scores[doc_id] = {"doc": res, "score": 0.0}
+            scores[doc_id]["score"] += 1.0 / (k + rank + 1)
+            
+        # Sort by score
+        sorted_docs = sorted(
+            scores.values(), key=lambda x: x["score"], reverse=True
+        )[:limit]
 
         # Format results
         formatted_results = []
-        for result in results:
-            metadata = json.loads(result.metadata)
+        for item in sorted_docs:
+            result = item["doc"]
+            metadata = json.loads(result["metadata"])
             formatted_results.append(
                 {
-                    "id": result.id,
-                    "content": result.content,
+                    "id": result["id"],
+                    "content": result["content"],
                     "metadata": metadata,
-                    "score": getattr(result, "_score", None),
+                    "score": item["score"],
                 }
             )
 
