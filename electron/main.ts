@@ -2,6 +2,10 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "path";
 import { startPython, killPython } from "./py-process";
 import http from "http";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null = null;
 let healthCheckInterval: NodeJS.Timeout | null = null;
@@ -158,6 +162,30 @@ app.whenReady().then(() => {
       return { success: false, error: errorMsg };
     }
   });
+
+  // IPC: open-file-at-line - 在外部编辑器中打开文件并定位到指定行
+  ipcMain.handle(
+    "open-file-at-line",
+    async (_, filePath: string, line: number) => {
+      try {
+        // Try VS Code first with --goto flag for precise line navigation
+        try {
+          await execAsync(`code --goto "${filePath}:${line}"`);
+          return { success: true, editor: "vscode" };
+        } catch {
+          // VS Code not available, fall back to system default
+          const result = await shell.openPath(path.dirname(filePath));
+          if (result) {
+            return { success: false, error: result };
+          }
+          return { success: true, editor: "default" };
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Unknown error";
+        return { success: false, error: errorMsg };
+      }
+    }
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

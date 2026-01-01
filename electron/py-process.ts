@@ -91,6 +91,7 @@ export function startPython(): void {
         ...process.env,
         PYTHONUNBUFFERED: "1",
         NODE_ENV: app.isPackaged ? "production" : "development",
+        LLM_MODEL: process.env.LLM_MODEL || "qwen3:0.6b",
       },
       stdio: ["ignore", "pipe", "pipe"],
     });

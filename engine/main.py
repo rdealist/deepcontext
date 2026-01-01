@@ -2,9 +2,11 @@ import json
 import os
 from typing import List, Optional
 
+import requests
 import uvicorn
 from core.ingest import FileScanner
 from core.llm import get_llm_service
+from database.chat_history import get_chat_history
 from db.manager import get_db_manager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,11 +27,13 @@ app.add_middleware(
 db_manager = None
 file_scanner = None
 llm_service = None
+chat_history = None
+chat_settings = {"model": None, "top_k": 5}
 
 
 def initialize_services():
     """Initialize database and scanner services."""
-    global db_manager, file_scanner, llm_service
+    global db_manager, file_scanner, llm_service, chat_history, chat_settings
 
     if db_manager is None:
         # Get database path from environment or use default
@@ -44,6 +48,13 @@ def initialize_services():
     if llm_service is None:
         llm_service = get_llm_service()
         print("[Engine] LLMService initialized")
+
+    if chat_history is None:
+        chat_history = get_chat_history()
+        print("[Engine] Chat history storage initialized")
+
+    if chat_settings["model"] is None:
+        chat_settings["model"] = llm_service.config.model
 
 
 # Initialize on startup
@@ -83,6 +94,8 @@ class SearchResult(BaseModel):
     file_path: str
     heading: Optional[str] = None
     score: Optional[float] = None
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
 
 
 class SearchResponse(BaseModel):
@@ -96,17 +109,56 @@ class SourceReference(BaseModel):
     file_path: str
     heading: Optional[str] = None
     score: Optional[float] = None
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
 
 
 class ChatRequest(BaseModel):
     message: str = Field(..., description="User's question")
-    top_k: int = Field(default=5, ge=1, le=20, description="Number of context chunks")
+    session_id: str = Field(..., description="Session ID for chat history")
+    top_k: Optional[int] = Field(
+        default=None, ge=1, le=20, description="Number of context chunks"
+    )
 
 
 class ChatResponse(BaseModel):
     answer: str
     sources: List[SourceReference]
     query: str
+
+
+class SessionInfo(BaseModel):
+    id: str
+    title: str
+    created_at: str
+
+
+class SessionCreateRequest(BaseModel):
+    title: Optional[str] = None
+
+
+class MessageInfo(BaseModel):
+    id: int
+    role: str
+    content: str
+    sources: Optional[List[SourceReference]] = None
+    created_at: str
+
+
+class SessionMessagesResponse(BaseModel):
+    session_id: str
+    messages: List[MessageInfo]
+
+
+class ModelsResponse(BaseModel):
+    models: List[str]
+    current_model: str
+    top_k: int
+
+
+class SettingsUpdateRequest(BaseModel):
+    model: Optional[str] = None
+    top_k: Optional[int] = Field(default=None, ge=1, le=20)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -127,6 +179,96 @@ async def health_check():
 async def hello():
     """Simple hello endpoint."""
     return HelloResponse(message="Hello from Python Engine")
+
+
+@app.get("/sessions", response_model=List[SessionInfo])
+async def list_sessions():
+    """List all chat sessions."""
+    initialize_services()
+    sessions = chat_history.list_sessions()
+    return [SessionInfo(**session.__dict__) for session in sessions]
+
+
+@app.post("/sessions", response_model=SessionInfo)
+async def create_session(request: SessionCreateRequest):
+    """Create a new chat session."""
+    initialize_services()
+    session = chat_history.create_session(title=request.title)
+    return SessionInfo(**session.__dict__)
+
+
+@app.get("/sessions/{session_id}", response_model=SessionMessagesResponse)
+async def get_session_messages(session_id: str):
+    """Get chat messages for a session."""
+    initialize_services()
+    session = chat_history.get_session(session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    messages = chat_history.list_messages(session_id)
+    return SessionMessagesResponse(
+        session_id=session_id,
+        messages=[
+            MessageInfo(
+                id=message.id,
+                role=message.role,
+                content=message.content,
+                sources=message.sources,
+                created_at=message.created_at,
+            )
+            for message in messages
+        ],
+    )
+
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a chat session and its messages."""
+    initialize_services()
+    deleted = chat_history.delete_session(session_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"success": True}
+
+
+@app.get("/models", response_model=ModelsResponse)
+async def list_models():
+    """List available Ollama models."""
+    initialize_services()
+    try:
+        response = requests.get("http://localhost:11434/api/tags", timeout=2)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=503, detail=f"Ollama API not available: {exc}"
+        )
+
+    payload = response.json()
+    models = [
+        model.get("name")
+        for model in payload.get("models", [])
+        if model.get("name")
+    ]
+    return ModelsResponse(
+        models=models,
+        current_model=chat_settings["model"],
+        top_k=chat_settings["top_k"],
+    )
+
+
+@app.post("/settings")
+async def update_settings(request: SettingsUpdateRequest):
+    """Update current model and top_k settings."""
+    initialize_services()
+
+    if request.model:
+        llm_service.config.model = request.model
+        chat_settings["model"] = request.model
+
+    if request.top_k is not None:
+        chat_settings["top_k"] = request.top_k
+
+    return {"model": chat_settings["model"], "top_k": chat_settings["top_k"]}
 
 
 @app.post("/api/index", response_model=IndexResponse)
@@ -235,6 +377,8 @@ async def search_documents(
                     file_path=metadata.get("file_path", ""),
                     heading=metadata.get("heading"),
                     score=result.get("score"),
+                    start_line=metadata.get("start_line"),
+                    end_line=metadata.get("end_line"),
                 )
             )
 
@@ -288,19 +432,32 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     try:
+        session = chat_history.get_session(request.session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        chat_history.add_message(
+            request.session_id, "user", request.message.strip(), None
+        )
+
         # Step 1: Search for relevant contexts
         doc_count = db_manager.get_document_count()
+        top_k = request.top_k or chat_settings["top_k"]
 
         if doc_count == 0:
+            answer = "知识库为空，请先导入文档后再提问。"
+            chat_history.add_message(request.session_id, "assistant", answer, [])
             return ChatResponse(
                 answer="知识库为空，请先导入文档后再提问。",
                 sources=[],
                 query=request.message,
             )
 
-        raw_results = db_manager.search(query=request.message, limit=request.top_k)
+        raw_results = db_manager.search(query=request.message, limit=top_k)
 
         if not raw_results:
+            answer = "没有找到与问题相关的内容，请尝试其他问题。"
+            chat_history.add_message(request.session_id, "assistant", answer, [])
             return ChatResponse(
                 answer="没有找到与问题相关的内容，请尝试其他问题。",
                 sources=[],
@@ -313,13 +470,18 @@ async def chat(request: ChatRequest):
 
         for result in raw_results:
             metadata = result.get("metadata", {})
+            score = result.get("score")
+            if score is not None:
+                score = float(score)
             sources.append(
-                SourceReference(
-                    file_name=metadata.get("file_name", "Unknown"),
-                    file_path=metadata.get("file_path", ""),
-                    heading=metadata.get("heading"),
-                    score=result.get("score"),
-                )
+                {
+                    "file_name": metadata.get("file_name", "Unknown"),
+                    "file_path": metadata.get("file_path", ""),
+                    "heading": metadata.get("heading"),
+                    "score": score,
+                    "start_line": metadata.get("start_line"),
+                    "end_line": metadata.get("end_line"),
+                }
             )
 
         # Step 3: Generate answer using LLM
@@ -330,6 +492,10 @@ async def chat(request: ChatRequest):
         )
 
         print(f"[Chat] Answer generated successfully")
+
+        chat_history.add_message(
+            request.session_id, "assistant", answer, sources
+        )
 
         return ChatResponse(
             answer=answer,
@@ -378,23 +544,46 @@ async def chat_stream(request: ChatRequest):
 
         return StreamingResponse(error_stream(), media_type="text/event-stream")
 
+    session = chat_history.get_session(request.session_id)
+    if session is None:
+
+        async def session_error_stream():
+            yield f"event: error\ndata: {json.dumps({'error': 'Session not found'})}\n\n"
+
+        return StreamingResponse(
+            session_error_stream(), media_type="text/event-stream"
+        )
+
     async def generate_sse():
         try:
+            chat_history.add_message(
+                request.session_id, "user", request.message.strip(), None
+            )
+
             # Step 1: Search for relevant contexts
             doc_count = db_manager.get_document_count()
+            top_k = request.top_k or chat_settings["top_k"]
 
             if doc_count == 0:
-                yield f"event: token\ndata: {json.dumps({'content': '知识库为空，请先导入文档后再提问。'})}\n\n"
+                answer = "知识库为空，请先导入文档后再提问。"
+                yield f"event: token\ndata: {json.dumps({'content': answer})}\n\n"
                 yield f"event: sources\ndata: {json.dumps({'sources': []})}\n\n"
                 yield "event: done\ndata: {}\n\n"
+                chat_history.add_message(
+                    request.session_id, "assistant", answer, []
+                )
                 return
 
-            raw_results = db_manager.search(query=request.message, limit=request.top_k)
+            raw_results = db_manager.search(query=request.message, limit=top_k)
 
             if not raw_results:
-                yield f"event: token\ndata: {json.dumps({'content': '没有找到与问题相关的内容，请尝试其他问题。'})}\n\n"
+                answer = "没有找到与问题相关的内容，请尝试其他问题。"
+                yield f"event: token\ndata: {json.dumps({'content': answer})}\n\n"
                 yield f"event: sources\ndata: {json.dumps({'sources': []})}\n\n"
                 yield "event: done\ndata: {}\n\n"
+                chat_history.add_message(
+                    request.session_id, "assistant", answer, []
+                )
                 return
 
             # Step 2: Extract contexts and sources
@@ -403,27 +592,37 @@ async def chat_stream(request: ChatRequest):
 
             for result in raw_results:
                 metadata = result.get("metadata", {})
+                score = result.get("score")
+                if score is not None:
+                    score = float(score)
                 sources.append(
                     {
                         "file_name": metadata.get("file_name", "Unknown"),
                         "file_path": metadata.get("file_path", ""),
                         "heading": metadata.get("heading"),
-                        "score": result.get("score"),
+                        "score": score,
+                        "start_line": metadata.get("start_line"),
+                        "end_line": metadata.get("end_line"),
                     }
                 )
 
             # Step 3: Stream answer using LLM
             print(f"[ChatStream] Generating answer for: {request.message[:50]}...")
+            full_content = ""
 
             for chunk in llm_service.generate_answer_stream(
                 query=request.message,
                 contexts=contexts,
             ):
+                full_content += chunk
                 yield f"event: token\ndata: {json.dumps({'content': chunk})}\n\n"
 
             # Step 4: Send sources at the end
             yield f"event: sources\ndata: {json.dumps({'sources': sources})}\n\n"
             yield "event: done\ndata: {}\n\n"
+            chat_history.add_message(
+                request.session_id, "assistant", full_content, sources
+            )
 
             print(f"[ChatStream] Stream completed successfully")
 

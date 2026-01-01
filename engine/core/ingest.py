@@ -55,14 +55,14 @@ class MarkdownChunker:
 
     def chunk(self, text: str, file_path: str) -> List[Dict[str, Any]]:
         """
-        Chunk markdown text into manageable pieces.
+        Chunk markdown text into manageable pieces with line number tracking.
 
         Args:
             text: Raw markdown text
             file_path: Path to source file
 
         Returns:
-            List of chunk dictionaries
+            List of chunk dictionaries with line number information
         """
         chunks = []
 
@@ -73,8 +73,9 @@ class MarkdownChunker:
         current_chunk = []
         current_heading = "Introduction"
         chunk_index = 0
+        chunk_start_line = 1  # Track starting line number (1-indexed)
 
-        for line in lines:
+        for line_idx, line in enumerate(lines, start=1):
             # Check if this is a heading
             heading_match = re.match(heading_pattern, line)
 
@@ -88,6 +89,8 @@ class MarkdownChunker:
                             "content": chunk_text,
                             "heading": current_heading,
                             "chunk_index": chunk_index,
+                            "start_line": chunk_start_line,
+                            "end_line": line_idx - 1,
                         }
                     )
                     chunk_index += 1
@@ -95,6 +98,7 @@ class MarkdownChunker:
                 # Start new chunk
                 current_heading = line.strip()
                 current_chunk = [line]
+                chunk_start_line = line_idx
             else:
                 current_chunk.append(line)
 
@@ -103,17 +107,26 @@ class MarkdownChunker:
                     chunk_text = "\n".join(current_chunk).strip()
                     sub_chunks = self._split_large_chunk(chunk_text)
 
+                    # Calculate approximate line numbers for sub-chunks
+                    lines_in_chunk = len(current_chunk)
+                    lines_per_subchunk = max(1, lines_in_chunk // len(sub_chunks))
+
                     for i, sub_chunk in enumerate(sub_chunks):
+                        sub_start = chunk_start_line + (i * lines_per_subchunk)
+                        sub_end = min(chunk_start_line + ((i + 1) * lines_per_subchunk) - 1, line_idx)
                         chunks.append(
                             {
                                 "content": sub_chunk,
                                 "heading": current_heading,
                                 "chunk_index": chunk_index + i,
+                                "start_line": sub_start,
+                                "end_line": sub_end,
                             }
                         )
 
                     chunk_index += len(sub_chunks)
                     current_chunk = []
+                    chunk_start_line = line_idx + 1
 
         # Don't forget the last chunk
         chunk_text = "\n".join(current_chunk).strip()
@@ -123,13 +136,21 @@ class MarkdownChunker:
                     "content": chunk_text,
                     "heading": current_heading,
                     "chunk_index": chunk_index,
+                    "start_line": chunk_start_line,
+                    "end_line": len(lines),
                 }
             )
 
         # If no chunks were created (e.g., file too small), create one
         if not chunks and text.strip():
             chunks.append(
-                {"content": text.strip(), "heading": "Content", "chunk_index": 0}
+                {
+                    "content": text.strip(),
+                    "heading": "Content",
+                    "chunk_index": 0,
+                    "start_line": 1,
+                    "end_line": len(lines),
+                }
             )
 
         # Add overlap to chunks (except first and last)
@@ -370,6 +391,8 @@ class FileScanner:
                             "heading": chunk.get("heading", ""),
                             "file_size": file_info.size,
                             "file_mtime": file_info.mtime,
+                            "start_line": chunk.get("start_line", 1),
+                            "end_line": chunk.get("end_line", 1),
                         },
                     }
                 )
