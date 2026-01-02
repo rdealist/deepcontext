@@ -1,19 +1,29 @@
 import time
 import os
+from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from typing import Callable
+from typing import Callable, Set
+
+SUPPORTED_EXTENSIONS: Set[str] = {".md", ".txt", ".markdown", ".pdf", ".docx"}
+
 
 class AutoIndexHandler(FileSystemEventHandler):
     def __init__(self, callback: Callable[[str], None]):
         self.callback = callback
 
+    def _is_supported(self, path: str) -> bool:
+        ext = Path(path).suffix.lower()
+        return ext in SUPPORTED_EXTENSIONS
+
     def on_created(self, event):
-        if not event.is_directory:
+        if not event.is_directory and self._is_supported(event.src_path):
+            print(f"[Watcher] New file detected: {event.src_path}")
             self.callback(event.src_path)
 
     def on_modified(self, event):
-        if not event.is_directory:
+        if not event.is_directory and self._is_supported(event.src_path):
+            print(f"[Watcher] File modified: {event.src_path}")
             self.callback(event.src_path)
 
 class DirectoryWatcher:

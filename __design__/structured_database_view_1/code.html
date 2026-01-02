@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Structured Database View</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#16202a",
+                        "surface-dark-hover": "#1c2834",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #233648;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #344c63;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="flex w-64 flex-col bg-[#111a22] border-r border-white/5 h-full shrink-0">
+<div class="flex flex-col gap-4 p-4 h-full">
+<!-- User Profile / Workspace -->
+<div class="flex items-center gap-3 px-2 py-2 mb-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 shadow-inner" data-alt="Abstract blue gradient avatar for workspace" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAvX7zwAdBbm652K8RJA2JV-1dwg_uSv283p61AKrNyihw0GcepPe1ekrE0EyNW-Hg5hQkkhUVxSgzrDmyWDa5_7SR-lPT2l-YVXrt91Qu3ePKKW-h7_ibZ0wnC1ES65s4Nh6pBfWzcCr2a_tsFedQGQtEPzQqQ_Y6_--f9kvBAItOHKQ6igVxeQ7ISi8X_6pw7Kvg2moWW4B3fq2Hma90A0z80QG2x2M_K_zQIlgAOtz6Vxnq-4aK_jfNdZm1qMb4SGO_uCxKanevm");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-sm font-semibold leading-tight">Product Workspace</h1>
+<p class="text-[#92adc9] text-xs font-normal">Personal Team</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1 grow">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-white transition-colors">home</span>
+<span class="text-sm font-medium">Home</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-white transition-colors">book</span>
+<span class="text-sm font-medium">All Notes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined text-xl fill-1">folder</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-white transition-colors">star</span>
+<span class="text-sm font-medium">Favorites</span>
+</a>
+<div class="mt-6 px-3 text-xs font-semibold text-[#5d7285] uppercase tracking-wider">Database</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group mt-1" href="#">
+<span class="material-symbols-outlined text-xl text-emerald-400">table_chart</span>
+<span class="text-sm font-medium">Roadmap Q4</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl text-purple-400">dns</span>
+<span class="text-sm font-medium">CRM Leads</span>
+</a>
+</nav>
+<!-- Bottom Actions -->
+<div class="flex flex-col gap-2 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-white transition-colors">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="h-px w-full bg-white/5 my-1"></div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92adc9] hover:bg-[#1c2834] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-xl group-hover:text-white transition-colors">help</span>
+<span class="text-sm font-medium">Help &amp; Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex flex-col flex-1 h-full min-w-0 overflow-hidden bg-background-dark relative">
+<!-- Top Header Area -->
+<header class="flex flex-col shrink-0 border-b border-white/5 bg-[#111a22]/80 backdrop-blur-md sticky top-0 z-20">
+<!-- Title & Meta -->
+<div class="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-[#92adc9] text-sm mb-1">
+<span>Projects</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span>2024 Planning</span>
+</div>
+<h1 class="text-white text-3xl font-bold leading-tight tracking-tight">Product Roadmap</h1>
+<p class="text-[#92adc9] text-sm font-normal">Q4 Goals and Deliverables tracking</p>
+</div>
+<div class="flex items-center gap-3">
+<!-- Avatars Stack -->
+<div class="flex -space-x-2 mr-2">
+<div class="w-8 h-8 rounded-full border-2 border-[#111a22] bg-cover bg-center" data-alt="Team member portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA77lU-vh49qCn4H3noaxdbbGURu2Fn3DHNYY1j09GZVX2M5Fm17G9-agBMkl3v7OA2S492NWX2z6L52W8zrN2mUNBXOk6x4ZN1jDw451SPMHuCKTd239q5manLWNKwUfnGp3Y87u6K9tqUrwq4ItZDm0gDA1k0KC6LTj9sOOabnIb4nwL1BF5cO795PBFh6k9OtuMyircy9UqBLGK3_NzqdPWfL9sPlX_wiWM24jD99geADKWOI5pKDGUJVaQjf5HwQWRQ2JMzcMax");'></div>
+<div class="w-8 h-8 rounded-full border-2 border-[#111a22] bg-cover bg-center" data-alt="Team member portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCvR_nF8hLDTZOLKESSALesre69RrcnWv4Pq9RFsLIeimR5zrvM-a2lkhOhDHHlspE_6fdBkLP0pktDe-wPoZVULbdRvC2WXM8OG_Zc2UplFcVAQkr_UNpxArb8SpKrMlzaMNqtfxuR98pRwPmROwN_ss5_saBn0UshN3niXrTBXKtVyOojcj3W15cedKAoUh3jwj9hb4l68F-i3gNLkLbrp355EsATsBBVPZNc6GXFGVemIk-Xz27ELJkw_ttg9TQG8RDhql6tPVVw");'></div>
+<div class="w-8 h-8 rounded-full border-2 border-[#111a22] bg-cover bg-center flex items-center justify-center bg-[#233648] text-xs text-white font-medium">+3</div>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg h-9 px-4 bg-[#233648] hover:bg-[#2f455a] text-white text-sm font-medium transition-colors border border-white/5">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+                            Share
+                        </button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-9 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-lg shadow-blue-900/20 transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                            New Item
+                        </button>
+</div>
+</div>
+<!-- Toolbar (Views + Filters) -->
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-6 pb-4 pt-1">
+<!-- View Switcher -->
+<div class="flex h-9 p-1 rounded-lg bg-[#1c2834]">
+<button class="flex items-center gap-2 px-3 h-full roundedmd bg-[#2c3e50] shadow-sm text-white text-xs font-medium transition-all">
+<span class="material-symbols-outlined text-[16px]">table_rows</span>
+                            Table
+                        </button>
+<button class="flex items-center gap-2 px-3 h-full rounded-md text-[#92adc9] hover:text-white hover:bg-white/5 text-xs font-medium transition-all">
+<span class="material-symbols-outlined text-[16px]">view_kanban</span>
+                            Kanban
+                        </button>
+<button class="flex items-center gap-2 px-3 h-full rounded-md text-[#92adc9] hover:text-white hover:bg-white/5 text-xs font-medium transition-all">
+<span class="material-symbols-outlined text-[16px]">grid_view</span>
+                            Gallery
+                        </button>
+</div>
+<!-- Filter Actions -->
+<div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto scrollbar-hide">
+<!-- Search -->
+<div class="relative group mr-2">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+<span class="material-symbols-outlined text-[#92adc9] text-[20px]">search</span>
+</div>
+<input class="block w-full md:w-64 p-2 pl-9 text-sm text-white border border-white/10 rounded-lg bg-[#1c2834] focus:ring-1 focus:ring-primary focus:border-primary placeholder-[#5d7285]" placeholder="Search database..." type="text"/>
+</div>
+<div class="h-6 w-px bg-white/10 mx-1"></div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-[#233648] transition-colors text-xs font-medium text-[#92adc9] whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+                            Filter
+                        </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-[#233648] transition-colors text-xs font-medium text-[#92adc9] whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">sort</span>
+                            Sort
+                        </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-[#233648] transition-colors text-xs font-medium text-[#92adc9] whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+                            Properties
+                        </button>
+</div>
+</div>
+</header>
+<!-- Database Table Content -->
+<div class="flex-1 overflow-auto p-0 scroll-smooth">
+<table class="w-full text-left border-collapse">
+<thead class="bg-[#16202a] sticky top-0 z-10 shadow-sm">
+<tr>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider w-10 border-b border-white/5" scope="col">
+<div class="flex items-center"><input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648]" type="checkbox"/></div>
+</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5 w-[30%]" scope="col">Name</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5" scope="col">Status</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5" scope="col">Priority</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5" scope="col">Assignee</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5" scope="col">Due Date</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5 w-[15%]" scope="col">Progress</th>
+<th class="px-6 py-3 text-xs font-medium text-[#92adc9] uppercase tracking-wider border-b border-white/5 w-10" scope="col"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Row 1 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-blue-500/10 text-blue-400">
+<span class="material-symbols-outlined text-[18px]">description</span>
+</div>
+<span class="text-sm font-medium text-white">Q3 Marketing Strategy</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/10">
+                                    In Progress
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-red-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">High</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSATPjW4Sq3BpR68dw87zXW-enMqet9ozSM-pYsJ93bcvrD0gzDDwFd8a7Z7DSUhrmhykyzHeoz5FfDbav8gaLRhf0AnMw8auMW7_l19b7waQXk7rr0G_j0yfB_Y2WkOlIs7jylENfUQfJLAANc0EaC3u2_56xH43JAPutBZ9v7w3vZfrjEklxWLXC49zRSBacQR0wmrpWR0tvV_AXxbKragxVPFe8fWLQFYV6hSs3_tPCYmL-fl2dj6IzFQwEyyuiZKrd5EEs9yim");'></div>
+<span class="text-sm text-gray-400">Sarah M.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Oct 15, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%"></div>
+</div>
+<span class="text-xs text-gray-400 font-mono w-8">75%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-purple-500/10 text-purple-400">
+<span class="material-symbols-outlined text-[18px]">web</span>
+</div>
+<span class="text-sm font-medium text-white">Website Redesign</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-300 border border-gray-500/10">
+                                    Planning
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-orange-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">Medium</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBme9q91cnLO3864_R7I37W5BSpSOiBXMO1zEDRkZw3fSwJxnTNmt-7XyeS_6NZsEuXep3cwQpD6APv3CToCj6ITbyKjy1NZ-CSaHrQZQQsJU-I85leM1C2wPYMX6R2Pnp8Q_XDGf4YzN7CoVRKYgbxqZp-1eaNlicMe28a9sAISkMdgc7hUPs2f1vNDDCQnmRE9FDmCAmuoa877e95ZQFPDlg-oZ7w4yDOBR2hrw3Z4ZagHZ2rpqWbnMiPm5wHS6YnCBSNPAUOsfOA");'></div>
+<span class="text-sm text-gray-400">David L.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Nov 01, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 10%"></div>
+</div>
+<span class="text-xs text-gray-400 font-mono w-8">10%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-emerald-500/10 text-emerald-400">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</div>
+<span class="text-sm font-medium text-white">User Interviews</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/10">
+                                    Done
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-red-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">High</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAu6ZMG7KWPphRorJv8GMYjWdcmvBFHMcyILd4QC_h9VuxmB7O8hiD38UXqXs7aRvpen77GW_pkHXJVncsdSXdGmNvhEcNSIPDcJYloeGGQ-8lKdr8xDCb2F_m5-25xO2Ipvz4kUF8uepkE0hftJ4qrp_KPm3kqkgfWNNmu-OnwEocgdTLuXnUAisxu_F9SAbjJAZ-_myz8BRcctP1Z0MgGXHfolAagPuLLLYMly5zo2HB0SfR3iRoQOdrC3CYU-K2P6DKMk2TbYWAE");'></div>
+<span class="text-sm text-gray-400">Elena R.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Sep 20, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 100%"></div>
+</div>
+<span class="text-xs text-emerald-400 font-mono w-8">100%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-yellow-500/10 text-yellow-400">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</div>
+<span class="text-sm font-medium text-white">API Integration V2</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/10">
+                                    Review
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-red-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">High</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAxq0xrpVd3culVNV7Ka39tUE_NzCH6BltxeHRtSyxyVzrlomh5D1pvbs55yBRfFEbezOfVNcldifK2EqbbaoUVE7kmLAmYCgouG5CWxct2cvgz-5FgFWAWKROWxUQYnODhBf1GFdXi-cxMyjvO1KBvfVZgfzjtFbH0X4Kh_SvwwmT7ZHLH7RT0bp6PYQdv9CmUnFcke1SJBbi87X98bqxj1o2OLldzvsDQ9wjDBh435gty9Nwx5bXGfOtQRtwqJCMnMTpwcDUAGqYZ");'></div>
+<span class="text-sm text-gray-400">Mark T.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Oct 25, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-yellow-500 rounded-full" style="width: 90%"></div>
+</div>
+<span class="text-xs text-yellow-400 font-mono w-8">90%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-pink-500/10 text-pink-400">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+</div>
+<span class="text-sm font-medium text-white">Brand Guidelines Update</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-300 border border-gray-500/10">
+                                    Backlog
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-green-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">Low</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC9QOEYoly6kSuj8xe-pdP-cHC383iNxbXJsQ4mRAuRRf0vUALD45SBAdSmaQ8UDVhEB9qqiqKQQFv_IzI2BxPYG_29xCmYNtQA3siFFk6LQ3xJf9L7S0rVhNPMI7qXzKMvvc7EvpAf-7xc25NLWljKdtpBi5nOEWYvEQfGPGGIugyAfvEYoAcDq0yY499LFOuE_jB1TBOBIbhZ2XI56_hiOop96sH6XU7AnYLsxQbn8hFbeZEl6ISRP6eFVakQQWb-ZbHV02kJe0Vf");'></div>
+<span class="text-sm text-gray-400">Lisa K.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Dec 10, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-gray-600 rounded-full" style="width: 0%"></div>
+</div>
+<span class="text-xs text-gray-500 font-mono w-8">0%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="group hover:bg-[#1c2834] transition-colors">
+<td class="px-6 py-3 whitespace-nowrap">
+<input class="rounded border-gray-600 text-primary focus:ring-0 focus:ring-offset-0 bg-[#233648] opacity-0 group-hover:opacity-100 transition-opacity" type="checkbox"/>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-cyan-500/10 text-cyan-400">
+<span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+</div>
+<span class="text-sm font-medium text-white">Cloud Migration</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/10">
+                                    In Progress
+                                </span>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-red-400 fill-1">flag</span>
+<span class="text-sm text-gray-300">High</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-cover bg-center ring-1 ring-white/10" data-alt="Assignee Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBNgNrR-DADBkhUq4_SWoXRtVBIqAHKrvGCGkJPr7XiA9vaXWqFlzXzjLRBNCaHn7RXMBBpoxkK4xzqsXDtJpviHM01e7G7EtGZ6fIlnkJCVBgQHXltTJwh9Xe6JFH0Qa435KQ17WZhAQKwVSxuS0vdV9omin--AGwTCmVsxjuLF2aWVB_Reua0v7E0BWij2T8Q-FX-YNC6IvXNO353DODPQPUQ256UXxT8_44CWP22AkFufyKGHnUBstQIukE5s2MrUnoY_RAg9IIi");'></div>
+<span class="text-sm text-gray-400">James P.</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">
+                                Nov 15, 2024
+                            </td>
+<td class="px-6 py-3 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-[#233648] rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+</div>
+<span class="text-xs text-gray-400 font-mono w-8">45%</span>
+</div>
+</td>
+<td class="px-6 py-3 whitespace-nowrap text-right">
+<button class="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Bottom Summary / Pagination -->
+<div class="flex items-center justify-between px-6 py-4 border-t border-white/5 text-xs text-[#92adc9]">
+<div class="flex items-center gap-4">
+<span class="hover:text-white cursor-pointer transition-colors">Count: 6</span>
+<span class="hover:text-white cursor-pointer transition-colors">Average Progress: 53%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[#5d7285]">Showing 1-6 of 24</span>
+<div class="flex gap-1 ml-2">
+<button class="size-6 flex items-center justify-center rounded bg-[#233648] hover:bg-[#2f455a] text-white">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<button class="size-6 flex items-center justify-center rounded bg-[#233648] hover:bg-[#2f455a] text-white">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

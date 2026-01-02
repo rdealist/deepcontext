@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Command Palette &amp; AI Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3b82f6", // blue-500
+                        "primary-hover": "#60a5fa", // blue-400
+                        "surface": "#1e293b", // slate-800 (Card background)
+                        "surface-muted": "#0f172a", // slate-900 (Deep background/Input)
+                        "surface-elevated": "#334155", // slate-700
+                        "border-subtle": "#334155", // slate-700
+                        "text-main": "#f1f5f9", // slate-100
+                        "text-muted": "#94a3b8", // slate-400
+                        "accent-blue": "rgba(59, 130, 246, 0.1)", // blue-500 with opacity
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'soft': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+                        'glow': '0 0 20px rgba(59, 130, 246, 0.15)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-text-main font-sans antialiased overflow-hidden h-screen w-screen relative selection:bg-primary/30 selection:text-white">
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute inset-0 bg-[#0f172a]/90 z-10"></div>
+<img alt="Desktop Wallpaper Background" class="w-full h-full object-cover blur-3xl opacity-40 scale-110 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP74nUYsfQxW9RLQQZV9tn_La8QNF73fdkctyOx-4mYLeBfMNQlX5eAAFGJVTLq4PVaQZhJFDG75wtnf_Z0XzRwGyO_qeNIYnJuOK1FdUj5pW1TAN7p3GAASz5738fasmKKfplhnexrALsnymrPXzxdrE5qHGFZrFPXCLlfiXXM_vjN4DYDg8VbR26P43UHFNYta3o1JI3KIBfvgR6fSKnbn2t_qR7WgWVpvYe1JVHcAASIaroghxP9mZOoKtLvnJj9Onko6N_ATlw"/>
+</div>
+<div class="relative z-20 flex h-full w-full items-center justify-center p-4 lg:p-12">
+<div class="w-full max-w-5xl h-[85vh] max-h-[750px] bg-surface rounded-2xl flex flex-col shadow-soft ring-1 ring-white/10 overflow-hidden transition-all">
+<div class="shrink-0 border-b border-border-subtle bg-surface z-10">
+<div class="relative flex items-center p-5 pb-2">
+<span class="material-symbols-outlined absolute left-8 text-text-muted text-2xl">search</span>
+<input autofocus="" class="w-full bg-surface-muted border border-border-subtle/50 rounded-xl text-lg font-medium text-text-main placeholder-text-muted focus:ring-2 focus:ring-primary/40 focus:bg-surface-muted transition-all pl-12 pr-16 h-14" placeholder="Ask AI or search..." type="text" value="Project Alpha Roadmap"/>
+<div class="absolute right-8 flex gap-2">
+<kbd class="hidden sm:inline-flex items-center justify-center h-7 px-2 bg-surface-elevated border border-border-subtle rounded-md text-xs text-text-muted font-medium shadow-subtle">
+                        ESC
+                    </kbd>
+</div>
+</div>
+<div class="flex gap-8 px-8 mt-2 text-sm font-medium text-text-muted">
+<button class="pb-3 text-primary border-b-2 border-primary transition-colors">All</button>
+<button class="pb-3 hover:text-text-main hover:border-border-subtle border-b-2 border-transparent transition-all">Files</button>
+<button class="pb-3 hover:text-text-main hover:border-border-subtle border-b-2 border-transparent transition-all">Actions</button>
+<button class="pb-3 hover:text-text-main hover:border-border-subtle border-b-2 border-transparent transition-all">History</button>
+</div>
+</div>
+<div class="flex flex-1 overflow-hidden">
+<div class="w-[45%] flex flex-col border-r border-border-subtle bg-surface">
+<div class="flex-1 overflow-y-auto py-2">
+<div class="px-4 py-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Top Hits</div>
+<div class="px-2 space-y-1">
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 ring-1 ring-primary/20 cursor-pointer">
+<div class="flex items-center justify-center size-9 rounded-md bg-surface-elevated border border-white/10 text-primary shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-text-main text-sm font-semibold truncate">Project Alpha Roadmap</div>
+<div class="text-xs text-text-muted truncate flex items-center gap-1">
+<span>Notion</span>
+<span class="w-0.5 h-0.5 rounded-full bg-text-muted"></span>
+<span>Updated 2h ago</span>
+</div>
+</div>
+<div class="shrink-0 text-text-muted">
+<span class="material-symbols-outlined text-[18px]">keyboard_return</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-elevated cursor-pointer transition-colors">
+<div class="flex items-center justify-center size-9 rounded-md bg-surface-muted border border-border-subtle text-text-muted group-hover:bg-surface-elevated group-hover:border-slate-600 group-hover:text-slate-300 transition-all shrink-0">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-text-main text-sm font-medium truncate">Q3 Financials</div>
+<div class="text-xs text-text-muted truncate">Google Sheets</div>
+</div>
+<div class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<kbd class="px-1.5 py-0.5 bg-surface-muted border border-border-subtle rounded text-[10px] text-text-muted shadow-sm">⌘ O</kbd>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-elevated cursor-pointer transition-colors">
+<div class="flex items-center justify-center size-9 rounded-md bg-surface-muted border border-border-subtle text-text-muted group-hover:bg-surface-elevated group-hover:border-slate-600 group-hover:text-slate-300 transition-all shrink-0">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-text-main text-sm font-medium truncate">Meeting Notes: Design Sync</div>
+<div class="text-xs text-text-muted truncate">Slack • #design-team</div>
+</div>
+</div>
+</div>
+<div class="px-4 pt-6 pb-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider">Commands</div>
+<div class="px-2 space-y-1">
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-elevated cursor-pointer transition-colors">
+<div class="flex items-center justify-center size-9 rounded-md bg-surface-muted border border-border-subtle text-text-muted group-hover:bg-surface-elevated group-hover:border-slate-600 group-hover:text-slate-300 transition-all shrink-0">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-text-main text-sm font-medium truncate">Create New Task</div>
+<div class="text-xs text-text-muted truncate">Linear</div>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-elevated cursor-pointer transition-colors">
+<div class="flex items-center justify-center size-9 rounded-md bg-surface-muted border border-border-subtle text-text-muted group-hover:bg-surface-elevated group-hover:border-slate-600 group-hover:text-slate-300 transition-all shrink-0">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="text-text-main text-sm font-medium truncate">Schedule Meeting</div>
+<div class="text-xs text-text-muted truncate">Google Calendar</div>
+</div>
+</div>
+</div>
+</div>
+<div class="shrink-0 p-3 bg-surface border-t border-border-subtle text-[11px] text-text-muted flex justify-between items-center">
+<span>5 results</span>
+<div class="flex gap-4">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">arrow_selector_tool</span> Select</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">keyboard_return</span> Open</span>
+</div>
+</div>
+</div>
+<div class="w-[55%] flex flex-col bg-surface-muted relative">
+<div class="absolute top-0 right-0 w-full h-64 bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none"></div>
+<div class="flex-1 overflow-y-auto p-8 relative z-10">
+<div class="flex items-center gap-2 mb-6">
+<div class="flex items-center justify-center size-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 shadow-glow">
+<span class="material-symbols-outlined text-white text-[16px]">auto_awesome</span>
+</div>
+<span class="text-xs font-bold text-primary tracking-wide uppercase">AI Summary</span>
+</div>
+<div class="space-y-5">
+<h2 class="text-2xl font-bold text-text-main leading-tight tracking-tight">Project Alpha Roadmap Overview</h2>
+<div class="prose prose-sm max-w-none text-slate-300 leading-relaxed">
+<p>
+                                Project Alpha is currently in <strong class="text-slate-100 font-semibold">Phase 2</strong> of development. The core infrastructure migration has been successfully completed as of last Friday.
+                            </p>
+<p class="mt-3">
+                                The team is now focusing on the frontend redesign. Key deliverables for this week include finalizing the component library and running initial user tests on the dashboard prototype.
+                            </p>
+<div class="mt-4 p-4 rounded-xl bg-surface border border-border-subtle shadow-sm">
+<ul class="space-y-2 text-sm">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px] mt-0.5">check_circle</span>
+<span class="text-slate-300">Timeline status: <span class="font-medium text-text-main">On Track</span></span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px] mt-0.5">check_circle</span>
+<span class="text-slate-300">Blockers: None reported</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">flag</span>
+<span class="text-slate-300">Next milestone: Beta Launch (Oct 15)</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="mt-10">
+<h4 class="text-xs font-semibold text-text-muted mb-3 uppercase tracking-wider">References</h4>
+<div class="flex flex-wrap gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-elevated hover:bg-slate-600 border border-border-subtle hover:border-slate-500 shadow-subtle transition-all text-xs text-slate-300">
+<span class="material-symbols-outlined text-[14px] text-blue-400">description</span>
+                                Alpha_Specs_v2.pdf
+                            </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-elevated hover:bg-slate-600 border border-border-subtle hover:border-slate-500 shadow-subtle transition-all text-xs text-slate-300">
+<span class="material-symbols-outlined text-[14px] text-emerald-400">table_chart</span>
+                                Q3_Okrs.xlsx
+                            </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-elevated hover:bg-slate-600 border border-border-subtle hover:border-slate-500 shadow-subtle transition-all text-xs text-slate-300">
+<span class="material-symbols-outlined text-[14px] text-purple-400">forum</span>
+                                #eng-updates
+                            </button>
+</div>
+</div>
+</div>
+<div class="shrink-0 p-5 border-t border-border-subtle bg-surface">
+<div class="relative group">
+<input class="w-full bg-surface-muted border border-border-subtle rounded-xl py-3.5 pl-4 pr-12 text-sm text-text-main placeholder-text-muted focus:ring-2 focus:ring-primary/40 focus:border-primary focus:bg-surface-muted transition-all shadow-inner" placeholder="Ask a follow-up question..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-surface border border-border-subtle text-text-muted hover:text-primary hover:border-primary hover:bg-primary/10 shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</button>
+</div>
+<div class="flex justify-between items-center mt-3 px-1">
+<div class="flex items-center gap-2">
+<span class="size-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] text-text-muted font-medium">AI Agent Active</span>
+</div>
+<span class="text-[10px] text-text-muted">LLM-3.5-Turbo</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-muted border-t border-border-subtle px-5 py-2.5 flex items-center justify-between shrink-0 text-xs">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-2 py-1 rounded bg-surface-elevated border border-border-subtle text-text-muted shadow-sm">
+<span class="size-2 rounded-full bg-emerald-500"></span>
+<span class="font-medium text-slate-300">System Operational</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-text-muted hover:text-primary flex items-center gap-1.5 transition-colors font-medium">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+                    Preferences
+                </button>
+<button class="text-text-muted hover:text-primary flex items-center gap-1.5 transition-colors font-medium">
+<span class="material-symbols-outlined text-[16px]">help</span>
+                    Help
+                </button>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>
